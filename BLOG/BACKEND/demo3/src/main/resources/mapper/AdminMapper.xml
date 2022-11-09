@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.AdminMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Admin">
+    <id column="admin_id" jdbcType="INTEGER" property="adminId" />
+    <result column="admin_username" jdbcType="VARCHAR" property="adminUsername" />
+    <result column="admin_nickname" jdbcType="VARCHAR" property="adminNickname" />
+    <result column="admin_password" jdbcType="VARCHAR" property="adminPassword" />
+    <result column="admin_avatar" jdbcType="VARCHAR" property="adminAvatar" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    admin_id, admin_username, admin_nickname, admin_password, admin_avatar
+  </sql>
+  <!-- 根据管理员用户名密码查询记录 -->
+  <select id="selectAdminByUsernameAndPassword" parameterType="com.wxm.demo.pojo.Admin" resultMap="BaseResultMap">
+    select
+        admin_id, admin_username, admin_nickname, admin_avatar
+    from
+        admin
+    where
+        admin_username = #{adminUsername}
+    and
+        admin_password = #{adminPassword}
+  </select>
+</mapper>

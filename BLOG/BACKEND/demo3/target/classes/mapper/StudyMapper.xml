@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.StudyMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Study">
+    <id column="study_id" jdbcType="INTEGER" property="studyId" />
+    <result column="study_cover" jdbcType="VARCHAR" property="studyCover" />
+    <result column="study_title" jdbcType="VARCHAR" property="studyTitle" />
+    <result column="study_createtime" jdbcType="TIMESTAMP" property="studyCreatetime" />
+    <result column="study_updatetime" jdbcType="TIMESTAMP" property="studyUpdatetime" />
+    <result column="study_sort_id" jdbcType="INTEGER" property="studySortId" />
+    <result column="study_status" jdbcType="INTEGER" property="studyStatus" />
+    <result column="study_top_status" jdbcType="INTEGER" property="studyTopStatus" />
+    <result column="study_views" jdbcType="INTEGER" property="studyViews" />
+    <result column="study_comments" jdbcType="INTEGER" property="studyComments" />
+    <result column="study_type" jdbcType="INTEGER" property="studyType" />
+    <result column="study_user_id" jdbcType="INTEGER" property="studyUserId" />
+    <result column="tags" jdbcType="VARCHAR" property="tags" />
+    <result column="study_content" jdbcType="LONGVARCHAR" property="studyContent" />
+    <result column="study_description" jdbcType="LONGVARCHAR" property="studyDescription" />
+    <association property="user" javaType="com.wxm.demo.pojo.User">
+      <id column="user_id" jdbcType="INTEGER" property="userId" />
+      <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+      <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+      <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+      <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+      <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+      <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+      <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+      <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+    </association>
+  </resultMap>
+  <sql id="Base_Column_List">
+    study_id, study_cover, study_title, study_createtime, study_updatetime,
+    study_sort_id, study_status, study_top_status, study_views, study_type,
+    study_user_id, tags, study_content, study_description
+  </sql>
+  <!-- 添加学习博客 -->
+  <insert id="insertStudy" parameterType="com.wxm.demo.pojo.Study">
+    insert into study (study_id, study_cover,
+      study_title, study_createtime, study_updatetime,
+      study_sort_id, study_status, study_top_status,
+      study_views, study_comments, study_type,
+      study_user_id, tags, study_content,
+      study_description)
+    values (#{studyId,jdbcType=INTEGER}, #{studyCover,jdbcType=VARCHAR},
+      #{studyTitle,jdbcType=VARCHAR}, #{studyCreatetime,jdbcType=TIMESTAMP}, #{studyUpdatetime,jdbcType=TIMESTAMP},
+      #{studySortId,jdbcType=INTEGER}, #{studyStatus,jdbcType=INTEGER}, #{studyTopStatus,jdbcType=INTEGER},
+      #{studyViews,jdbcType=INTEGER}, #{studyComments,jdbcType=INTEGER}, #{studyType,jdbcType=INTEGER},
+      #{studyUserId,jdbcType=INTEGER}, #{tags,jdbcType=VARCHAR}, #{studyContent,jdbcType=LONGVARCHAR},
+      #{studyDescription,jdbcType=LONGVARCHAR})
+  </insert>
+  <!-- 查询学习分类的博客，显示在首页 -->
+  <select id="selectStudyAndShowOnHome" resultMap="BaseResultMap">
+    select
+        study_id, study_cover, study_title, study_createtime,
+        study_views, study_user_id, tags, study_content, study_description,
+        user_id, user_nickname, user_avatar,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = study_id
+		and
+		    comment_article_sort_id = study_sort_id) as study_comments
+    from
+        study, user
+    where
+        study_user_id = user_id
+    and
+        study_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        study_createtime desc
+    limit 6
+  </select>
+  <!-- 查询学习分类的置顶博客 -->
+  <select id="selectStudyByTopStatus" resultMap="BaseResultMap">
+    select
+        study_id, study_cover, study_title, study_sort_id, user_id
+    from
+        study, user
+    where
+        study_user_id = user_id
+    and
+        study_top_status = #{blogTop}
+    and
+        study_status = #{blogStatusValid}
+    and
+        user_status = 1
+  </select>
+  <!-- 通过用户id查询所有学习分类的博客 -->
+  <select id="selectMyStudyBlogsByUserId" resultMap="BaseResultMap">
+    select
+        study_id, study_title, study_createtime, study_type, study_cover, study_description, study_views,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = study_id
+		and
+		    comment_article_sort_id = study_sort_id) as study_comments
+    from
+        study
+    where
+        study_user_id = #{userId}
+    and
+        study_status = #{blogStatusValid}
+    order by
+        study_createtime desc
+  </select>
+  <!-- 通过用户id查询草稿箱中所有学习分类的博客 -->
+  <select id="selectMyStudyBlogsInDraftByUserId" resultMap="BaseResultMap">
+    select
+        study_id, study_title, study_createtime, study_type
+    from
+        study
+    where
+        study_user_id = #{userId}
+    and
+        study_status = #{blogStatusInvalid}
+    order by
+        study_createtime desc
+  </select>
+  <!-- 后台管理 学习 -->
+  <select id="selectStudyManage" resultMap="BaseResultMap">
+    select
+        study_id, study_title, study_updatetime, study_status, study_top_status, study_type,
+        user_id, user_nickname
+    from
+        study, user
+    where
+        study_user_id = user_id
+    and
+        user_status = 1
+    order by
+        study_updatetime desc
+  </select>
+  <!-- 后台管理 学习 修改置顶状态 -->
+  <update id="updateStudyTopStatus" parameterType="com.wxm.demo.pojo.Study">
+    update
+        study
+    set
+        study_top_status = #{studyTopStatus}
+    where
+        study_id = #{studyId}
+  </update>
+  <!-- 后台管理 学习 修改博客状态 -->
+  <update id="updateStudyStatus" parameterType="com.wxm.demo.pojo.Study">
+    update
+        study
+    set
+        study_status = #{studyStatus}
+    where
+        study_id = #{studyId}
+  </update>
+  <!-- 学习分类 -->
+  <select id="selectStudySort" resultMap="BaseResultMap">
+    select
+        study_id, study_cover, study_title, study_createtime,
+        study_views, study_user_id, tags, study_content, study_description,
+        user_id, user_nickname, user_avatar,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = study_id
+		and
+		    comment_article_sort_id = study_sort_id) as study_comments
+    from
+        study, user
+    where
+        study_user_id = user_id
+    and
+        study_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        study_createtime desc
+  </select>
+  <!-- 查看学习博客详情 -->
+  <select id="selectStudyByStudyIdAndStudyValid" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List" />,
+        user_id, user_name, user_nickname, user_email, user_gender, user_avatar, user_signature, user_createtime,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = study_id
+        and
+            comment_article_sort_id = study_sort_id) as study_comments
+    from
+        study, user
+    where
+        study_id = #{studyId}
+    and
+        study_status = #{blogStatusValid}
+    and
+        study_user_id = user_id
+    and
+        user_status = 1
+  </select>
+  <!-- 根据id查询学习博客 返回编辑页 -->
+  <select id="selectStudyByStudyId" resultMap="BaseResultMap">
+    select
+      study_id, study_cover, study_title, study_status,
+      study_type, tags, study_content, study_description
+    from
+        study, user
+    where
+        study_id = #{studyId}
+  </select>
+  <!-- 更新浏览量 -->
+  <update id="updateStudyViewsByStudyId" parameterType="com.wxm.demo.pojo.Study">
+    update
+        study
+    set
+        study_views = study_views + 1
+    where
+        study_id = #{studyId}
+  </update>
+  <!-- 修改学习博客 -->
+  <update id="updateStudy" parameterType="com.wxm.demo.pojo.Study">
+    update
+        study
+    set
+        study_cover = #{studyCover},
+        study_title = #{studyTitle},
+        study_updatetime = #{studyUpdatetime},
+        tags = #{tags},
+        study_content = #{studyContent},
+        study_description = #{studyDescription},
+        study_type = #{studyType},
+        study_status = #{studyStatus}
+    where
+        study_id = #{studyId}
+  </update>
+  <!-- 根据id删除学习博客 -->
+  <delete id="deleteStudyById" parameterType="com.wxm.demo.pojo.Study">
+    delete
+    from
+        study
+    where
+        study_id = #{studyId}
+  </delete>
+  <!-- 根据query 查询相关博客 -->
+  <select id="selectStudyByQuery" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List"></include>,
+        user_id, user_avatar, user_nickname,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = study_id
+        and
+            comment_article_sort_id = study_sort_id) as study_comments
+    from
+        study
+    left join
+        user
+    on
+        study_user_id = user_id
+    where
+        study_title like concat('%',#{query},'%')
+    or
+        study_content like concat('%',#{query},'%')
+    and
+        study_status = 1
+    order by
+        study_createtime desc
+  </select>
+
+
+</mapper>

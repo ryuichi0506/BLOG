@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.MusicMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Music">
+    <id column="music_id" jdbcType="INTEGER" property="musicId" />
+    <result column="music_title" jdbcType="VARCHAR" property="musicTitle" />
+    <result column="music_src_title" jdbcType="VARCHAR" property="musicSrcTitle" />
+    <result column="music_cover" jdbcType="VARCHAR" property="musicCover" />
+    <result column="music_artist" jdbcType="VARCHAR" property="musicArtist" />
+    <result column="music_src" jdbcType="VARCHAR" property="musicSrc" />
+    <result column="music_description" jdbcType="VARCHAR" property="musicDescription" />
+    <result column="music_content" jdbcType="LONGVARCHAR" property="musicContent" />
+    <result column="music_createtime" jdbcType="TIMESTAMP" property="musicCreatetime" />
+    <result column="music_updatetime" jdbcType="TIMESTAMP" property="musicUpdatetime" />
+    <result column="music_sort_id" jdbcType="INTEGER" property="musicSortId" />
+    <result column="music_status" jdbcType="INTEGER" property="musicStatus" />
+    <result column="music_view" jdbcType="INTEGER" property="musicView" />
+    <result column="music_comments" jdbcType="INTEGER" property="musicComments" />
+    <result column="music_type" jdbcType="INTEGER" property="musicType" />
+    <result column="music_user_id" jdbcType="INTEGER" property="musicUserId" />
+    <result column="tags" jdbcType="VARCHAR" property="tags" />
+    <association property="user" javaType="com.wxm.demo.pojo.User">
+      <id column="user_id" jdbcType="INTEGER" property="userId" />
+      <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+      <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+      <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+      <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+      <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+      <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+      <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+      <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+    </association>
+  </resultMap>
+  <sql id="Base_Column_List">
+    music_id, music_src_title, music_title, music_cover, music_artist, music_src, music_description, music_createtime,
+    music_updatetime, music_sort_id, music_status, music_view, music_type,
+    music_user_id, tags, music_content
+  </sql>
+  <!-- 添加音乐博客 -->
+  <insert id="insertMusic" parameterType="com.wxm.demo.pojo.Music">
+    insert into music (music_id, music_title, music_src_title,
+      music_cover, music_artist, music_src, music_description,
+      music_createtime, music_updatetime, music_sort_id,
+      music_status, music_view, music_comments,
+      music_type, music_user_id, tags,
+      music_content)
+    values (#{musicId,jdbcType=INTEGER}, #{musicTitle,jdbcType=VARCHAR}, #{musicSrcTitle,jdbcType=VARCHAR},
+      #{musicCover,jdbcType=VARCHAR}, #{musicArtist,jdbcType=VARCHAR}, #{musicSrc,jdbcType=VARCHAR}, #{musicDescription,jdbcType=VARCHAR},
+      #{musicCreatetime,jdbcType=TIMESTAMP}, #{musicUpdatetime,jdbcType=TIMESTAMP}, #{musicSortId,jdbcType=INTEGER},
+      #{musicStatus,jdbcType=INTEGER}, #{musicView,jdbcType=INTEGER}, #{musicComments,jdbcType=INTEGER},
+      #{musicType,jdbcType=INTEGER}, #{musicUserId,jdbcType=INTEGER}, #{tags,jdbcType=VARCHAR},
+      #{musicContent,jdbcType=LONGVARCHAR})
+  </insert>
+  <!-- 查询音乐分类的博客，显示在首页 -->
+  <select id="selectMusicAndShowOnHome" resultMap="BaseResultMap">
+    select
+        music_id, music_src_title, music_title, music_cover, music_artist, music_src, music_description, music_createtime, music_status, music_view, music_user_id, tags,
+        user_id, user_nickname, user_avatar,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = music_id
+		and
+		    comment_article_sort_id = music_sort_id) as music_comments
+    from
+        music, user
+    where
+        music.music_user_id = user.user_id
+    and
+        music_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        music_createtime desc
+    limit 6
+  </select>
+  <!-- 通过用户id查询所有音乐分类的博客 -->
+  <select id="selectMyMusicBlogsByUserId" resultMap="BaseResultMap">
+    select
+        music_id, music_title, music_createtime, music_src_title,
+        music_cover, music_artist, music_src, music_description,
+        music_view,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = music_id
+		and
+		    comment_article_sort_id = music_sort_id) as music_comments
+    from
+        music
+    where
+        music_user_id = #{userId}
+    and
+        music_status = #{blogStatusValid}
+    order by
+        music_createtime desc
+  </select>
+  <!-- 通过用户id查询草稿箱中所有音乐分类的博客 -->
+  <select id="selectMyMusicBlogsInDraftByUserId" resultMap="BaseResultMap">
+    select
+        music_id, music_title, music_createtime
+    from
+        music
+    where
+        music_user_id = #{userId}
+    and
+        music_status = #{blogStatusInvalid}
+    order by
+        music_createtime desc
+  </select>
+  <!-- 后台管理 音乐 -->
+  <select id="selectMusicManage" resultMap="BaseResultMap">
+    select
+        music_id, music_src_title, music_title, music_cover, music_artist, music_src, music_createtime, music_status, music_type,
+        user_id, user_nickname
+    from
+        music, user
+    where
+        music_user_id = user_id
+    and
+        user_status = 1
+    order by
+        music_createtime desc
+  </select>
+  <!-- 后台管理 音乐 修改博客状态 -->
+  <update id="updateMusicStatus" parameterType="com.wxm.demo.pojo.Music">
+    update
+        music
+    set
+        music_status = #{musicStatus}
+    where
+        music_id = #{musicId}
+  </update>
+  <!-- 音乐分类 -->
+  <select id="selectMusicSort" resultMap="BaseResultMap">
+    select
+        music_id, music_src_title, music_title, music_cover, music_artist, music_src, music_description, music_createtime, music_status, music_view, music_user_id, tags,
+        user_id, user_nickname, user_avatar,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = music_id
+		and
+		    comment_article_sort_id = music_sort_id) as music_comments
+    from
+        music, user
+    where
+        music.music_user_id = user.user_id
+    and
+        music_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        music_createtime desc
+  </select>
+  <!-- 查看音乐博客详情 -->
+  <select id="selectMusicByMusicIdAndMusicValid" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List"/>,
+        user_id, user_name, user_nickname, user_email, user_gender, user_avatar, user_signature, user_createtime,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = music_id
+        and
+            comment_article_sort_id = music_sort_id) as music_comments
+    from
+        music, user
+    where
+        music_id = #{musicId}
+    and
+        music_status = #{blogStatusValid}
+    and
+        music_user_id = user_id
+    and
+        user_status = 1
+  </select>
+  <!-- 根据id查询音乐博客 返回编辑页 -->
+  <select id="selectMusicByMusicId" resultMap="BaseResultMap">
+    select
+        music_id, music_src_title, music_title, music_cover, music_artist, music_src,
+        music_description, music_status, music_type, tags, music_content
+    from
+        music, user
+    where
+        music_id = #{musicId}
+  </select>
+  <!-- 更新浏览量 -->
+  <update id="updateMusicViewsByMusicId" parameterType="com.wxm.demo.pojo.Music">
+    update
+        music
+    set
+        music_view = music_view + 1
+    where
+        music_id = #{musicId}
+  </update>
+  <!-- 修改音乐博客 -->
+  <update id="updateMusic" parameterType="com.wxm.demo.pojo.Music">
+    update
+        music
+    set
+        music_title = #{musicTitle},
+        music_src_title = #{musicSrcTitle},
+        music_cover = #{musicCover},
+        music_artist = #{musicArtist},
+        music_src = #{musicSrc},
+        music_updatetime = #{musicUpdatetime},
+        music_type = #{musicType},
+        tags = #{tags},
+        music_content = #{musicContent},
+        music_status = #{musicStatus}
+    where
+        music_id = #{musicId}
+  </update>
+  <!-- 根据id删除音乐博客 -->
+  <delete id="deleteMusicById" parameterType="com.wxm.demo.pojo.Music">
+    delete
+    from
+        music
+    where
+        music_id = #{musicId}
+  </delete>
+  <!-- 根据query 查询相关博客 -->
+  <select id="selectMusicByQuery" parameterType="java.lang.String" resultMap="BaseResultMap">
+      select
+          <include refid="Base_Column_List"></include>,
+          user_id, user_avatar, user_nickname,
+          (select
+            COUNT(*)
+          FROM
+            comment
+          where
+            comment_article_id = music_id
+          and
+            comment_article_sort_id = music_sort_id) as music_comments
+      from
+        music
+      left join
+        user
+      on
+        music_user_id = user_id
+      where
+        music_title like concat('%',#{query},'%')
+      or
+        music_src_title like concat('%',#{query},'%')
+      or
+        music_artist like concat('%',#{query},'%')
+      or
+        music_content like concat('%',#{query},'%')
+      and
+        music_status = 1
+      order by
+        music_createtime desc
+  </select>
+</mapper>

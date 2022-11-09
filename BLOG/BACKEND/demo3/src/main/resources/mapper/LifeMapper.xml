@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.LifeMapper">
+    <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Life">
+    <id column="life_id" jdbcType="INTEGER" property="lifeId" />
+    <result column="life_cover" jdbcType="VARCHAR" property="lifeCover" />
+    <result column="life_title" jdbcType="VARCHAR" property="lifeTitle" />
+    <result column="life_createtime" jdbcType="TIMESTAMP" property="lifeCreatetime" />
+    <result column="life_updatetime" jdbcType="TIMESTAMP" property="lifeUpdatetime" />
+    <result column="life_sort_id" jdbcType="INTEGER" property="lifeSortId" />
+    <result column="life_content" jdbcType="LONGVARCHAR" property="lifeContent" />
+    <result column="life_status" jdbcType="INTEGER" property="lifeStatus" />
+    <result column="life_views" jdbcType="INTEGER" property="lifeViews" />
+    <result column="life_comments" jdbcType="INTEGER" property="lifeComments" />
+    <result column="life_user_id" jdbcType="INTEGER" property="lifeUserId" />
+    <result column="tags" jdbcType="VARCHAR" property="tags" />
+    <association property="user" javaType="com.wxm.demo.pojo.User">
+      <id column="user_id" jdbcType="INTEGER" property="userId" />
+      <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+      <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+      <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+      <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+      <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+      <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+      <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+      <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+    </association>
+    </resultMap>
+    <sql id="Base_Column_List">
+    life_id, life_cover, life_title, life_createtime, life_updatetime, life_sort_id,
+    life_status, life_views, life_user_id, tags, life_content
+    </sql>
+    <!-- 添加生活博客 -->
+    <insert id="insert" parameterType="com.wxm.demo.pojo.Life">
+    insert into life (life_id, life_cover,
+      life_title, life_createtime, life_updatetime,
+      life_sort_id, life_status, life_views,
+      life_comments, life_user_id, tags,
+      life_content)
+    values (#{lifeId,jdbcType=INTEGER}, #{lifeCover,jdbcType=VARCHAR},
+      #{lifeTitle,jdbcType=VARCHAR}, #{lifeCreatetime,jdbcType=TIMESTAMP}, #{lifeUpdatetime,jdbcType=TIMESTAMP},
+      #{lifeSortId,jdbcType=INTEGER}, #{lifeStatus,jdbcType=INTEGER}, #{lifeViews,jdbcType=INTEGER},
+      #{lifeComments,jdbcType=INTEGER}, #{lifeUserId,jdbcType=INTEGER}, #{tags,jdbcType=VARCHAR},
+      #{lifeContent,jdbcType=LONGVARCHAR})
+    </insert>
+    <!-- 查询生活分类的博客，显示在首页 -->
+    <select id="selectLifeAndShowOnHome" resultMap="BaseResultMap">
+    select
+        life_id, life_cover, life_title, life_createtime, life_status, life_views, life_comments, life_user_id, tags,
+        user_id, user_nickname, user_avatar,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = life_id
+        and
+            comment_article_sort_id = life_sort_id) as life_comments
+    from
+         life, user
+    where
+        life.life_user_id = user.user_id
+    and
+        life_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        life_createtime desc
+    limit 6
+    </select>
+    <!-- 通过用户id查询所有生活分类的博客 -->
+    <select id="selectMyLifeBlogsByUserId" resultMap="BaseResultMap">
+    select
+        life_id, life_title, life_createtime, life_cover, life_views,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = life_id
+        and
+            comment_article_sort_id = life_sort_id) as life_comments
+    from
+        life
+    where
+        life_user_id = #{userId}
+    and
+        life_status = #{blogStatusValid}
+    order by
+        life_createtime desc
+    </select>
+    <!-- 通过用户id查询草稿箱中所有生活分类的博客 -->
+    <select id="selectMyLifeBlogsInDraftByUserId" resultMap="BaseResultMap">
+    select
+        life_id, life_title, life_createtime
+    from
+        life
+    where
+        life_user_id = #{userId}
+    and
+        life_status = #{blogStatusInvalid}
+    order by
+      life_createtime desc
+    </select>
+    <!-- 后台管理 生活 -->
+    <select id="selectLifeManage" resultMap="BaseResultMap">
+    select
+        life_id, life_title, life_updatetime, life_status,
+        user_id, user_nickname
+    from
+        life, user
+    where
+        life_user_id = user_id
+    and
+        user_status = 1
+    order by
+        life_updatetime desc
+    </select>
+    <!-- 后台管理 生活 修改博客状态 -->
+    <update id="updateLifeStatus" parameterType="com.wxm.demo.pojo.Life">
+    update
+        life
+    set
+        life_status = #{lifeStatus}
+    where
+        life_id = #{lifeId}
+    </update>
+    <!-- 生活分类 -->
+    <select id="selectLifeSort" resultMap="BaseResultMap">
+    select
+        life_id, life_cover, life_title, life_createtime, life_status, life_views, life_user_id, tags,
+        user_id, user_nickname, user_avatar,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = life_id
+        and
+            comment_article_sort_id = life_sort_id) as life_comments
+    from
+        life, user
+    where
+        life.life_user_id = user.user_id
+    and
+        life_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        life_createtime desc
+    </select>
+    <!-- 查看生活博客详情 -->
+    <select id="selectLifeByLifeIdAndLifeValid" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List" />,
+        user_id, user_name, user_nickname, user_email, user_gender, user_avatar, user_signature, user_createtime,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = life_id
+        and
+            comment_article_sort_id = life_sort_id) as life_comments
+    from
+        life, user
+    where
+        life_id = #{lifeId}
+    and
+        life_status = #{blogStatusValid}
+    and
+        life_user_id = user_id
+    and
+        user_status = 1
+    </select>
+    <!-- 根据id查询生活博客 返回编辑页 -->
+    <select id="selectLifeByLifeId" resultMap="BaseResultMap">
+        select
+            life_id, life_cover, life_title,
+            life_status, tags, life_content
+        from
+            life, user
+        where
+            life_id = #{lifeId}
+    </select>
+    <!-- 更新浏览量 -->
+    <update id="updateLifeViewsByLifeId" parameterType="com.wxm.demo.pojo.Life">
+        update
+            life
+        set
+            life_views = life_views + 1
+        where
+            life_id = #{lifeId}
+    </update>
+    <!-- 更新生活博客 -->
+    <update id="updateLife" parameterType="com.wxm.demo.pojo.Life">
+        update
+            life
+        set
+            life_cover = #{lifeCover},
+            life_title = #{lifeTitle},
+            life_updatetime = #{lifeUpdatetime},
+            tags = #{tags},
+            life_content = #{lifeContent},
+            life_status = #{lifeStatus}
+        where
+            life_id = #{lifeId}
+    </update>
+    <!-- 根据id删除生活博客 -->
+    <delete id="deleteLifeById" parameterType="com.wxm.demo.pojo.Life">
+        delete
+        from
+            life
+        where
+            life_id = #{lifeId}
+    </delete>
+    <!-- 根据query 查询相关博客 -->
+    <select id="selectLifeByQuery" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+            <include refid="Base_Column_List"></include>,
+            user_id, user_avatar, user_nickname,
+            (select
+                COUNT(*)
+            FROM
+                comment
+            where
+                comment_article_id = life_id
+            and
+                comment_article_sort_id = life_sort_id) as life_comments
+        from
+            life
+        left join
+            user
+        on
+            life_user_id = user_id
+        where
+            life_title like concat('%',#{query},'%')
+        or
+            life_content like concat('%',#{query},'%')
+        and
+            life_status = 1
+        order by
+            life_createtime desc
+    </select>
+</mapper>

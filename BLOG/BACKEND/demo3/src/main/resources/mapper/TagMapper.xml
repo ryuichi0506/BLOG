@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.TagMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Tag">
+    <id column="tag_id" jdbcType="INTEGER" property="tagId" />
+    <result column="tag_name" jdbcType="VARCHAR" property="tagName" />
+    <association property="study" javaType="com.wxm.demo.pojo.Study">
+      <id column="study_id" jdbcType="INTEGER" property="studyId" />
+      <result column="study_user_id" jdbcType="INTEGER" property="studyUserId" />
+      <result column="tags" jdbcType="VARCHAR" property="tags" />
+    </association>
+    <association property="anime" javaType="com.wxm.demo.pojo.Anime">
+      <id column="anime_id" jdbcType="INTEGER" property="animeId" />
+      <result column="anime_user_id" jdbcType="INTEGER" property="animeUserId" />
+      <result column="tags" jdbcType="VARCHAR" property="tags" />
+    </association>
+    <association property="life" javaType="com.wxm.demo.pojo.Life">
+      <id column="life_id" jdbcType="INTEGER" property="lifeId" />
+      <result column="life_user_id" jdbcType="INTEGER" property="lifeUserId" />
+      <result column="tags" jdbcType="VARCHAR" property="tags" />
+    </association>
+    <association property="music" javaType="com.wxm.demo.pojo.Music">
+      <id column="music_id" jdbcType="INTEGER" property="musicId" />
+      <result column="music_user_id" jdbcType="INTEGER" property="musicUserId" />
+      <result column="tags" jdbcType="VARCHAR" property="tags" />
+    </association>
+  </resultMap>
+  <sql id="Base_Column_List">
+    tag_id, tag_name
+  </sql>
+  <!-- 添加标签 -->
+  <insert id="insertTag" parameterType="com.wxm.demo.pojo.Tag">
+    insert into
+        tag (tag_name)
+    values
+        (#{tagName,jdbcType=VARCHAR})
+  </insert>
+  <!-- 根据标签名字查询标签 -->
+  <select id="selectByTagName" resultMap="BaseResultMap">
+    select
+        tag_id, tag_name
+    from
+        tag
+    where
+        tag_name = #{tagName}
+  </select>
+  <!-- 后台管理 标签 -->
+  <select id="selectTagManage" resultMap="BaseResultMap">
+    select
+        tag_id, tag_name
+    from
+        tag
+    order by
+        tag_id
+  </select>
+  <!-- 显示用户已发博客的标签 -->
+  <select id="selectTagsByUserId" parameterType="com.wxm.demo.pojo.User" resultMap="BaseResultMap">
+    select
+        tag_name
+    from
+        tag
+    left join
+        study
+    on
+        locate(tag_name,study.tags)
+    left join
+        anime
+    on
+        locate(tag_name,anime.tags)
+    left join
+        life
+    on
+        locate(tag_name,life.tags)
+    left join
+        music
+    on
+        locate(tag_name,music.tags)
+    where
+        study_user_id = #{userId}
+    or
+        anime_user_id = #{userId}
+    or
+        life_user_id = #{userId}
+    or
+        music_user_id = #{userId}
+    group by
+        tag_name
+    order by
+        tag_id
+  </select>
+</mapper>

@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.AnimeMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Anime">
+    <id column="anime_id" jdbcType="INTEGER" property="animeId" />
+    <result column="anime_cover" jdbcType="VARCHAR" property="animeCover" />
+    <result column="anime_title" jdbcType="VARCHAR" property="animeTitle" />
+    <result column="anime_content" jdbcType="LONGVARCHAR" property="animeContent" />
+    <result column="anime_description" jdbcType="LONGVARCHAR" property="animeDescription" />
+    <result column="anime_createtime" jdbcType="TIMESTAMP" property="animeCreatetime" />
+    <result column="anime_updatetime" jdbcType="TIMESTAMP" property="animeUpdatetime" />
+    <result column="anime_sort_id" jdbcType="INTEGER" property="animeSortId" />
+    <result column="anime_status" jdbcType="INTEGER" property="animeStatus" />
+    <result column="anime_top_status" jdbcType="INTEGER" property="animeTopStatus" />
+    <result column="anime_views" jdbcType="INTEGER" property="animeViews" />
+    <result column="anime_comments" jdbcType="INTEGER" property="animeComments" />
+    <result column="anime_type" jdbcType="INTEGER" property="animeType" />
+    <result column="anime_user_id" jdbcType="INTEGER" property="animeUserId" />
+    <result column="tags" jdbcType="VARCHAR" property="tags" />
+    <association property="user" javaType="com.wxm.demo.pojo.User">
+      <id column="user_id" jdbcType="INTEGER" property="userId" />
+      <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+      <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+      <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+      <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+      <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+      <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+      <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+      <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+    </association>
+  </resultMap>
+  <sql id="Base_Column_List">
+    anime_id, anime_cover, anime_title, anime_createtime, anime_updatetime,
+    anime_sort_id, anime_status, anime_top_status, anime_views, anime_type,
+    anime_user_id, tags, anime_content, anime_description
+  </sql>
+  <!-- 添加动漫博客 -->
+  <insert id="insertAnime" parameterType="com.wxm.demo.pojo.Anime">
+    insert into anime (anime_id, anime_cover,
+      anime_title, anime_createtime, anime_updatetime,
+      anime_sort_id, anime_status, anime_top_status,
+      anime_views, anime_comments, anime_type,
+      anime_user_id, tags, anime_content,
+      anime_description)
+    values (#{animeId,jdbcType=INTEGER}, #{animeCover,jdbcType=VARCHAR},
+      #{animeTitle,jdbcType=VARCHAR}, #{animeCreatetime,jdbcType=TIMESTAMP}, #{animeUpdatetime,jdbcType=TIMESTAMP},
+      #{animeSortId,jdbcType=INTEGER}, #{animeStatus,jdbcType=INTEGER}, #{animeTopStatus,jdbcType=INTEGER},
+      #{animeViews,jdbcType=INTEGER}, #{animeComments,jdbcType=INTEGER}, #{animeType,jdbcType=INTEGER},
+      #{animeUserId,jdbcType=INTEGER}, #{tags,jdbcType=VARCHAR}, #{animeContent,jdbcType=LONGVARCHAR},
+      #{animeDescription,jdbcType=LONGVARCHAR})
+  </insert>
+  <!-- 查询动漫分类的博客，显示在首页 -->
+  <select id="selectAnimeAndShowOnHome" resultMap="BaseResultMap">
+    select
+        anime_id, anime_cover, anime_title, anime_description, anime_createtime, anime_views, anime_user_id, tags,
+        user_id, user_nickname, user_avatar,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = anime_id
+		and
+		    comment_article_sort_id = anime_sort_id) as anime_comments
+    from
+        anime, user
+    where
+        anime.anime_user_id = user.user_id
+    and
+        anime_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        anime_createtime desc
+    limit 8
+  </select>
+  <!-- 查询动漫分类的置顶博客 -->
+  <select id="selectAnimeByTopStatus" resultMap="BaseResultMap">
+    select
+        anime_id, anime_cover, anime_title, anime_sort_id
+    from
+        anime, user
+    where
+        anime_user_id = user_id
+    and
+        anime_top_status = #{blogTop}
+    and
+        anime_status = #{blogStatusValid}
+    and
+        user_status = 1
+  </select>
+  <!-- 通过用户id查询所有动漫分类的博客 -->
+  <select id="selectMyAnimeBlogsByUserId" resultMap="BaseResultMap">
+    select
+        anime_id, anime_title, anime_createtime, anime_type, anime_cover, anime_description, anime_views,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = anime_id
+		and
+		    comment_article_sort_id = anime_sort_id) as anime_comments
+    from
+        anime
+    where
+        anime_user_id = #{userId}
+    and
+        anime_status = #{blogStatusValid}
+    order by
+        anime_createtime desc
+  </select>
+  <!-- 通过用户id查询草稿箱中所有动漫分类的博客 -->
+  <select id="selectMyAnimeBlogsInDraftByUserId" resultMap="BaseResultMap">
+    select
+        anime_id, anime_title, anime_createtime, anime_type
+    from
+        anime
+    where
+        anime_user_id = #{userId}
+    and
+        anime_status = #{blogStatusInvalid}
+    order by
+        anime_createtime desc
+  </select>
+  <!-- 后台管理 动漫 -->
+  <select id="selectAnimeManage" resultMap="BaseResultMap">
+    select
+        anime_id, anime_title, anime_updatetime, anime_status, anime_top_status, anime_type,
+        user_id, user_nickname
+    from
+        anime, user
+    where
+        anime_user_id = user_id
+    and
+        user_status = 1
+    order by
+        anime_updatetime desc
+  </select>
+  <!-- 后台管理 动漫 修改置顶状态 -->
+  <update id="updateAnimeTopStatus" parameterType="com.wxm.demo.pojo.Anime">
+    update
+        anime
+    set
+        anime_top_status = #{animeTopStatus}
+    where
+        anime_id = #{animeId}
+  </update>
+  <!-- 后台管理 动漫 修改博客状态 -->
+  <update id="updateAnimeStatus" parameterType="com.wxm.demo.pojo.Anime">
+    update
+        anime
+    set
+        anime_status = #{animeStatus}
+    where
+        anime_id = #{animeId}
+  </update>
+  <!-- 动漫分类 -->
+  <select id="selectAnimeSort" resultMap="BaseResultMap">
+    select
+        anime_id, anime_cover, anime_title, anime_description, anime_createtime, anime_views, anime_user_id, tags,
+        user_id, user_nickname, user_avatar,
+        (select
+			COUNT(*)
+		FROM
+			comment
+		where
+			comment_article_id = anime_id
+		and
+		    comment_article_sort_id = anime_sort_id) as anime_comments
+    from
+        anime, user
+    where
+        anime.anime_user_id = user.user_id
+    and
+        anime_status = #{blogStatusValid}
+    and
+        user_status = 1
+    order by
+        anime_createtime desc
+  </select>
+  <!-- 查看动漫博客详情 -->
+  <select id="selectAnimeByAnimeIdAndAnimeValid" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List" />,
+        user_id, user_name, user_nickname, user_email, user_gender, user_avatar, user_signature, user_createtime,
+        (select
+            COUNT(*)
+        FROM
+            comment
+        where
+            comment_article_id = anime_id
+        and
+            comment_article_sort_id = anime_sort_id) as anime_comments
+    from
+        anime, user
+    where
+        anime_id = #{animeId}
+    and
+        anime_status = #{blogStatusValid}
+    and
+        anime_user_id = user_id
+    and
+        user_status = 1
+  </select>
+  <!-- 根据id查询动漫博客 返回编辑页 -->
+  <select id="selectAnimeByAnimeId" resultMap="BaseResultMap">
+    select
+        anime_id, anime_cover, anime_title, anime_status,
+        anime_type, tags, anime_content, anime_description
+    from
+        anime, user
+    where
+        anime_id = #{animeId}
+  </select>
+  <!-- 更新浏览量 -->
+  <update id="updateAnimeViewsByAnimeId" parameterType="com.wxm.demo.pojo.Anime">
+    update
+        anime
+    set
+        anime_views = anime_views + 1
+    where
+        anime_id = #{animeId}
+  </update>
+  <!-- 修改动漫博客 -->
+  <update id="updateAnime" parameterType="com.wxm.demo.pojo.Anime">
+    update
+        anime
+    set
+        anime_cover = #{animeCover},
+        anime_title = #{animeTitle},
+        anime_updatetime = #{animeUpdatetime},
+        tags = #{tags},
+        anime_content = #{animeContent},
+        anime_description = #{animeDescription},
+        anime_type = #{animeType},
+        anime_status = #{animeStatus}
+    where
+        anime_id = #{animeId}
+  </update>
+  <!-- 根据id删除动漫博客 -->
+  <delete id="deleteAnimeById" parameterType="com.wxm.demo.pojo.Anime">
+    delete
+    from
+        anime
+    where
+        anime_id = #{animeId}
+  </delete>
+  <!-- 根据query 查询相关博客 -->
+  <select id="selectAnimeByQuery" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+            <include refid="Base_Column_List"></include>,
+            user_id, user_avatar, user_nickname,
+            (select
+                COUNT(*)
+            FROM
+                comment
+            where
+                comment_article_id = anime_id
+            and
+                comment_article_sort_id = anime_sort_id) as anime_comments
+        from
+            anime
+        left join
+            user
+        on
+            anime_user_id = user_id
+        where
+            anime_title like concat('%',#{query},'%')
+        or
+            anime_content like concat('%',#{query},'%')
+        and
+            anime_status = 1
+        order by
+            anime_createtime desc
+    </select>
+</mapper>

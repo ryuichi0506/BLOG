@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.CommentMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Comment">
+    <id column="comment_id" jdbcType="INTEGER" property="commentId" />
+    <result column="comment_user_id" jdbcType="INTEGER" property="commentUserId" />
+    <result column="comment_content" jdbcType="LONGVARCHAR" property="commentContent" />
+    <result column="comment_article_id" jdbcType="INTEGER" property="commentArticleId" />
+    <result column="comment_article_sort_id" jdbcType="INTEGER" property="commentArticleSortId" />
+    <result column="comment_createtime" jdbcType="TIMESTAMP" property="commentCreatetime" />
+    <result column="comment_object_id" jdbcType="INTEGER" property="commentObjectId" />
+    <result column="comment_parent_id" jdbcType="INTEGER" property="commentParentId" />
+    <association property="user" javaType="com.wxm.demo.pojo.User">
+      <id column="user_id" jdbcType="INTEGER" property="userId" />
+      <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+      <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+      <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+      <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+      <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+      <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+      <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+      <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+    </association>
+  </resultMap>
+  <sql id="Base_Column_List">
+    comment_id, comment_user_id, comment_article_id, comment_article_sort_id, comment_createtime,
+    comment_object_id, comment_parent_id,  comment_content
+  </sql>
+  <!-- 添加评论 -->
+  <insert id="insertComment" parameterType="com.wxm.demo.pojo.Comment">
+    insert into comment (comment_user_id, comment_article_id,
+      comment_article_sort_id, comment_createtime, comment_object_id,
+      comment_parent_id, comment_content)
+    values (#{commentUserId,jdbcType=INTEGER}, #{commentArticleId,jdbcType=INTEGER},
+      #{commentArticleSortId,jdbcType=INTEGER}, #{commentCreatetime,jdbcType=TIMESTAMP},
+      #{commentObjectId,jdbcType=INTEGER}, #{commentParentId,jdbcType=INTEGER},
+      #{commentContent,jdbcType=LONGVARCHAR})
+  </insert>
+  <!-- 查询某篇文章下的父评论 -->
+  <select id="selectCommentsByArticleIdAndSortId" parameterType="com.wxm.demo.pojo.Comment" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List" />,
+        user_id, user_avatar, user_nickname
+    from
+        comment, user
+    where
+        comment_article_id = #{commentArticleId}
+    and
+        comment_article_sort_id = #{commentArticleSortId}
+    and
+        comment_user_id = user_id
+    and
+        comment_parent_id is null
+    order by
+        comment_createtime desc
+  </select>
+  <!-- 查找子评论 -->
+  <select id="selectChildrenCommentByParentId" parameterType="com.wxm.demo.pojo.Comment" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List" />,
+        user_id, user_avatar, user_nickname
+    from
+        comment, user
+    where
+        comment_user_id = user_id
+    and
+        comment_parent_id = #{commentId}
+    order by
+        comment_createtime desc
+  </select>
+</mapper>

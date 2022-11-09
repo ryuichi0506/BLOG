@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.UserMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.User">
+    <id column="user_id" jdbcType="INTEGER" property="userId" />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+    <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+    <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+    <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+    <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+    <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+    <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+    <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    user_id, user_name, user_nickname, user_password, user_email, user_gender, user_avatar, 
+    user_signature, user_createtime, user_status
+  </sql>
+  <sql id="Base_Column_List_No_Password">
+    user_id, user_name, user_nickname, user_email, user_gender, user_avatar,
+    user_signature, user_createtime, user_status
+  </sql>
+  <!-- 根据用户的用户名和密码查询 -->
+  <select id="selectUserByUsernameAndPassword" parameterType="com.wxm.demo.pojo.User" resultMap="BaseResultMap">
+    select
+        user_id, user_name, user_nickname, user_email, user_gender, user_avatar,
+        user_signature, user_createtime, user_status
+    from
+        user
+    where
+        user_name = #{userName}
+    and
+        user_password = #{userPassword}
+    and
+        user_status = #{userStatusValid}
+  </select>
+  <!-- 根据用户id查询用户 -->
+  <select id="selectUserById" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List_No_Password" />
+    from
+        user
+    where
+        user_id = #{userId}
+    and
+        user_status = #{userStatusValid}
+  </select>
+  <!-- 修改用户信息 -->
+  <update id="updateUserInfo" parameterType="com.wxm.demo.pojo.User">
+    update user
+    <set>
+      <if test="user.userName != null">
+        user_name = #{user.userName,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userNickname != null">
+        user_nickname = #{user.userNickname,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userPassword != null">
+        user_password = #{user.userPassword,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userEmail != null">
+        user_email = #{user.userEmail,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userGender != null">
+        user_gender = #{user.userGender,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userAvatar != null">
+        user_avatar = #{user.userAvatar,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userSignature != null">
+        user_signature = #{user.userSignature,jdbcType=VARCHAR},
+      </if>
+      <if test="user.userCreatetime != null">
+        user_createtime = #{user.userCreatetime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="user.userStatus != null">
+        user_status = #{user.userStatus,jdbcType=INTEGER},
+      </if>
+    </set>
+    where
+        user_id = #{user.userId}
+  </update>
+  <!-- 后台管理 用户 -->
+  <select id="selectUserManage" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List_No_Password" />
+    from
+        user
+    order by
+        user_createtime desc
+  </select>
+  <!-- 后台管理 用户 修改用户状态 -->
+  <update id="updateUserStatus" parameterType="com.wxm.demo.pojo.User">
+    update
+        user
+    set
+        user_status = #{userStatus}
+    where
+        user_id = #{userId}
+  </update>
+  <!-- 根据用户名查询是否存在该用户（检验用户名是否重复） -->
+  <select id="selectByUserName" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List_No_Password" />
+    from
+        user
+    where
+        user_name = #{userName}
+  </select>
+  <!-- 用户注册 -->
+  <insert id="insertUser" parameterType="com.wxm.demo.pojo.User">
+    insert into
+        user (user_name, user_nickname, user_password, user_email, user_avatar, user_createtime, user_status)
+    values
+        (#{user.userName,jdbcType=VARCHAR}, #{user.userNickname,jdbcType=VARCHAR}, #{user.userPassword,jdbcType=VARCHAR},
+        #{user.userEmail,jdbcType=VARCHAR}, #{user.userAvatar,jdbcType=VARCHAR}, #{user.userCreatetime,jdbcType=TIMESTAMP},
+        #{user.userStatus,jdbcType=INTEGER})
+  </insert>
+  <!-- 根据用户id删除用户 -->
+  <delete id="deleteUserById" parameterType="com.wxm.demo.pojo.Study">
+    delete
+    from
+        user
+    where
+        user_id = #{userId}
+  </delete>
+  <!-- 根据 query模糊查询 查找用户的用户名、用户昵称是否与此相似 -->
+  <select id="selectUserByQuery" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select
+        user_id, user_name, user_nickname, user_email,  user_gender,
+        user_avatar, user_signature, user_createtime
+    from
+        user
+    where
+        user_nickname like concat('%',#{query},'%')
+    or
+        user_name like concat('%',#{query},'%')
+    and
+        user_status = 1
+  </select>
+
+</mapper>

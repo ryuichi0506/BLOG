@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wxm.demo.dao.MessageMapper">
+  <resultMap id="BaseResultMap" type="com.wxm.demo.pojo.Message">
+    <id column="message_id" jdbcType="INTEGER" property="messageId" />
+    <result column="message_user_id" jdbcType="INTEGER" property="messageUserId" />
+    <result column="message_createtime" jdbcType="TIMESTAMP" property="messageCreatetime" />
+    <result column="message_return_admin_id" jdbcType="INTEGER" property="messageReturnAdminId" />
+    <result column="message_return_createtime" jdbcType="TIMESTAMP" property="messageReturnCreatetime" />
+    <result column="message_content" jdbcType="LONGVARCHAR" property="messageContent" />
+    <result column="message_return_content" jdbcType="LONGVARCHAR" property="messageReturnContent" />
+    <association property="user" javaType="com.wxm.demo.pojo.User">
+      <id column="user_id" jdbcType="INTEGER" property="userId" />
+      <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <result column="user_nickname" jdbcType="VARCHAR" property="userNickname" />
+      <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+      <result column="user_email" jdbcType="VARCHAR" property="userEmail" />
+      <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+      <result column="user_avatar" jdbcType="VARCHAR" property="userAvatar" />
+      <result column="user_signature" jdbcType="VARCHAR" property="userSignature" />
+      <result column="user_createtime" jdbcType="TIMESTAMP" property="userCreatetime" />
+      <result column="user_status" jdbcType="INTEGER" property="userStatus" />
+    </association>
+    <association property="admin" javaType="com.wxm.demo.pojo.Admin">
+      <id column="admin_id" jdbcType="INTEGER" property="adminId" />
+      <result column="admin_username" jdbcType="VARCHAR" property="adminUsername" />
+      <result column="admin_nickname" jdbcType="VARCHAR" property="adminNickname" />
+      <result column="admin_password" jdbcType="VARCHAR" property="adminPassword" />
+      <result column="admin_avatar" jdbcType="VARCHAR" property="adminAvatar" />
+    </association>
+  </resultMap>
+  <sql id="Base_Column_List">
+    message_id, message_user_id, message_createtime, message_return_admin_id,
+    message_return_createtime, message_content, message_return_content
+  </sql>
+  <!-- 发布留言 -->
+  <insert id="insertMessage" parameterType="com.wxm.demo.pojo.Message">
+    insert into
+        message (message_id, message_user_id, message_createtime, message_content)
+    values
+        (#{messageId,jdbcType=INTEGER}, #{messageUserId,jdbcType=INTEGER},
+        #{messageCreatetime,jdbcType=TIMESTAMP}, #{messageContent,jdbcType=LONGVARCHAR})
+  </insert>
+  <!-- 获取留言板的所有留言 -->
+  <select id="selectMessages" resultMap="BaseResultMap">
+    select
+		message_id, message_user_id, message_createtime, message_return_admin_id, message_return_createtime, message_content, message_return_content,
+		user_id, user_avatar, user_nickname,
+		admin_id, admin_avatar, admin_nickname
+	from
+		message
+    left join
+        user
+    on
+	    message_user_id = user_id
+	and
+	    user_status = 1
+    left join
+	    admin
+    on
+	    message_return_admin_id = admin_id
+	order by
+		message_createtime desc
+  </select>
+  <!-- 获取首页最新的一条留言 -->
+  <select id="selectNewMessage" resultMap="BaseResultMap">
+    select
+        message_id, message_content, message_createtime,
+        user_id, user_avatar, user_nickname
+    from
+        message, user
+    where
+        message_user_id = user_id
+    and
+        user_status = 1
+    order by
+        message_createtime desc
+    limit
+        1
+  </select>
+  <!-- 后台管理 留言 -->
+  <select id="selectMessageManage" resultMap="BaseResultMap">
+    select
+        message_id, message_user_id, message_createtime, message_content, message_return_content, user_avatar, user_nickname
+    from
+        message, user
+    where
+        message_user_id = user_id
+    and
+        user_status = 1
+    order by
+        message_createtime desc
+  </select>
+  <!-- 根据id查找对应留言 -->
+  <select id="selectMessageById" resultMap="BaseResultMap">
+    select
+        <include refid="Base_Column_List"></include>
+    from
+        message
+    where
+        message_id = #{messageId}
+  </select>
+  <!-- 修改对应留言 -->
+  <update id="updateReplyMessage" parameterType="com.wxm.demo.pojo.Message">
+    update
+        message
+    set
+        message_return_admin_id = #{messageReturnAdminId},
+        message_return_createtime = #{messageReturnCreatetime},
+        message_return_content = #{messageReturnContent}
+    where
+        message_id = #{messageId}
+  </update>
+  <!-- 根据留言id删除留言 -->
+  <delete id="deleteMessageById" parameterType="com.wxm.demo.pojo.Message">
+    delete
+    from
+        message
+    where
+        message_id = #{messageId}
+  </delete>
+</mapper>
